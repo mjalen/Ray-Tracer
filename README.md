@@ -1,6 +1,6 @@
 # Yet Another Simple Ray Tracer
 
-![The Current Output](https://github.com/mjalen/ray-tracer/blob/main/output.ppm?raw=true)
+![The Current Output](https://github.com/mjalen/ray-tracer/blob/main/output.png?raw=true)
 
 This project is a learning exercise with a few objectives:
 
