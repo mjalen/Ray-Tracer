@@ -31,12 +31,17 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(initial: Vec<Box<dyn Hittable>>) -> Self {
-        World { objects: initial }
+    pub fn new() -> Self {
+        World { objects: vec![] }
     }
 
     pub fn insert(mut self, object: Box<dyn Hittable>) -> Self {
         self.objects.push(object);
+        self
+    }
+
+    pub fn clear(mut self) -> Self {
+        self.objects = vec![];
         self
     }
 }

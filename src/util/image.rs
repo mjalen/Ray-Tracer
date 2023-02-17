@@ -1,5 +1,6 @@
 use crate::math::vector::Vector3 as Point;
 use crate::util::camera::Camera;
+use crate::util::hittable::*;
 
 type Color = Point;
 
@@ -9,10 +10,18 @@ pub struct Image {
     pub height: i32,
 }
 
+pub struct DrawHeader<'a> {
+    pub output_file: &'a str, 
+    pub camera: &'a Camera,
+    pub world: &'a World,
+    pub draw_call: fn(RenderObject) -> Color
+}
+
 pub struct RenderObject<'a> {
     pub coordinate: Point,
     pub image: &'a Image,
     pub camera: &'a Camera,
+    pub world: &'a World
 }
 
 impl Image {
@@ -21,7 +30,7 @@ impl Image {
         Image { width, height }
     }
 
-    pub fn draw(&self, output_file: &str, camera: &Camera, draw_call: fn(RenderObject) -> Color) -> std::io::Result<()> {
+    pub fn draw(&self, header: DrawHeader) -> std::io::Result<()> {
         let mut render_contents: String = format!("P3\n{} {}\n255\n", self.width, self.height);
 
         let render_plane: Vec<RenderObject> = {
@@ -34,7 +43,8 @@ impl Image {
                     plane.push( RenderObject {
                         coordinate: Point::new(nx, ny, 0.0),
                         image: self,
-                        camera
+                        camera: header.camera,
+                        world: header.world
                     });
                 }
             }
@@ -43,7 +53,7 @@ impl Image {
         
         let pixel_val: Vec<Color> = render_plane
             .into_iter()
-            .map(draw_call)
+            .map(header.draw_call)
             .collect();
 
         for p in pixel_val {
@@ -51,7 +61,7 @@ impl Image {
         }
 
         use std::fs;
-        fs::write(output_file, render_contents)?;
+        fs::write(header.output_file, render_contents)?;
         Ok(())
     }
 }
