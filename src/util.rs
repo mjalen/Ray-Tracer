@@ -1,3 +1,3 @@
 pub mod image;
-pub mod vector;
-pub mod ray;
+pub mod camera;
+pub mod hittable;
