@@ -1,6 +1,6 @@
 # Yet Another Simple Ray Tracer
 
-![The Current Output](output.ppm "The Current Output")
+![The Current Output](https://github.com/mjalen/ray-tracer/output.ppm?raw=true)
 
 This project is a learning exercise with a few objectives:
 
