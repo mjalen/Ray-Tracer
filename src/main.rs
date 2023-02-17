@@ -45,8 +45,11 @@ fn main() -> std::io::Result<()> {
 }
 
 fn ray_color(r: Ray) -> Color {
-    let sphere: Sphere = Sphere::new(Point::new(0.0, 0.0, -1.0), 0.25);
-    let collide: Option<RayCollision> = sphere.hit(r);
+    let world: World = World::new(vec![])
+        .insert(Box::new(Sphere::new(Point::new(-0.25, -0.25, -1.0), 0.15)))
+        .insert(Box::new(Sphere::new(Point::new(0.25, -0.25, -1.0), 0.15)))
+        .insert(Box::new(Sphere::new(Point::new(0.0, 0.25, -1.0), 0.15)));
+    let collide: Option<RayCollision> = world.hit(r);
 
     match collide {
         Some(c) => {

@@ -7,18 +7,67 @@ type Point = Vector3;
 pub struct RayCollision { // returned when an object is hit by a ray.
     pub hit_point: Point,
     pub normal: Point,
-    pub distance: f32
+    pub distance: f32,
+    pub front_face: bool
 }
 
 impl RayCollision {
-    pub fn new(hit_point: Point, normal: Point, distance: f32) -> Self {
-        RayCollision { hit_point, normal, distance }
+    pub fn new(ray: Ray, normal: Point, distance: f32) -> Self {
+        // if normal points into shape, reverse it.
+        let is_inward: bool = ray.direction.dot(&normal) < 0.0; 
+        let outward_normal: Point = if is_inward { normal } else { normal.scalar_mul(-1.0) }; 
+
+        RayCollision { 
+            hit_point: ray.at(distance), 
+            normal: outward_normal, 
+            distance,
+            front_face: is_inward
+        }
+    }
+}
+
+pub struct World {
+    pub objects: Vec<Box<dyn Hittable>>,
+}
+
+impl World {
+    pub fn new(initial: Vec<Box<dyn Hittable>>) -> Self {
+        World { objects: initial }
+    }
+
+    pub fn insert(mut self, object: Box<dyn Hittable>) -> Self {
+        self.objects.push(object);
+        self
+    }
+}
+
+impl Hittable for World {
+    fn hit(&self, ray: Ray) -> Option<RayCollision> {
+        let hits: Vec<Option<RayCollision>> = self.objects
+            .iter()
+            .map(|obj| obj.hit(ray))
+            .collect();
+
+        let mut minimum: Option<RayCollision> = None;
+        for collision in hits {
+            let _ = match collision {
+                Some(c) => {
+                    match minimum {
+                        Some(min) => if min.distance > c.distance { minimum = Some(c) },
+                        None => minimum = Some(c)
+                    }
+                },
+                None => {}
+            };
+        }
+
+        minimum
     }
 }
 
 // trait for all render objects
 pub trait Hittable {
-    fn hit(self, ray: Ray) -> Option<RayCollision>;
+    fn hit(&self, ray: Ray) -> Option<RayCollision>;
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -34,7 +83,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(self, ray: Ray) -> Option<RayCollision> {
+    fn hit(&self, ray: Ray) -> Option<RayCollision> {
         // t^2*b*b + 2tb*(A-C)+(A-C)*(A-C) t solved using quadratic formula
         let o_min_c: Point = ray.origin + self.center.scalar_mul(-1.0);
         let a: f32 = ray.direction.dot(&ray.direction); 
@@ -47,10 +96,9 @@ impl Hittable for Sphere {
 
         // finish quad formula to get ray distance. 
         let dist: f32 = (-1.0 * b - formula_sqrt.sqrt()) / (2.0 * a);
-        let collision: Point = ray.at(dist);
-        let norm: Point = (collision + self.center.scalar_mul(-1.0)).unit(); 
+        let norm: Point = (ray.at(dist) + self.center.scalar_mul(-1.0)).unit(); 
         
-        Some(RayCollision::new(collision, norm, dist)) 
+        Some(RayCollision::new(ray, norm, dist)) 
 
     }
 }
