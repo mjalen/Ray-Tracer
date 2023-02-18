@@ -8,6 +8,7 @@ type Color = Point;
 pub struct Image {
     pub width: i32,
     pub height: i32,
+    pub samples_per_pixel: i32,
 }
 
 pub struct DrawHeader<'a> {
@@ -27,21 +28,27 @@ pub struct RenderObject<'a> {
 impl Image {
     pub fn new(width: i32, height: i32) -> Self {
         println!("Created a new {}x{} image!", width, height);
-        Image { width, height }
+        Image { width, height, samples_per_pixel: 20 }
     }
 
     pub fn draw(&self, header: DrawHeader) -> std::io::Result<()> {
         let mut render_contents: String = format!("P3\n{} {}\n255\n", self.width, self.height);
 
+        // generate a list of each point to render, as a vec container
         let render_plane: Vec<RenderObject> = {
             let mut plane: Vec<RenderObject> = vec![];
             for n in (0..self.height).rev() {
                 for m in 0..self.width {
-                    let nx = m  as f32 / (self.width-1) as f32;
-                    let ny = n as f32 / (self.height-1) as f32;
+                    // get image coordinate x and y normalized
+                    // let nx = m  as f32 / (self.width-1) as f32;
+                    // let ny = n as f32 / (self.height-1) as f32;
+
+                    // Using un-normalized world space coordinates
+                    // so that anti-alias properly calculates sample
+                    // coordinates.
 
                     plane.push( RenderObject {
-                        coordinate: Point::new(nx, ny, 0.0),
+                        coordinate: Point::new(m as f32, n as f32, 0.0),
                         image: self,
                         camera: header.camera,
                         world: header.world

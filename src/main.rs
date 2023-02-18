@@ -7,13 +7,19 @@ use crate::util::camera::Camera;
 use crate::util::hittable::*;
 use crate::math::*;
 
+use std::time::Instant;
+
 type Point = Vector3;
 type Color = Vector3;
 
 fn main() -> std::io::Result<()> {
+    // calculate program run-time.
+    let now = Instant::now();
+
+
     // image settings
     let aspect_ratio: f32 = 16.0 / 10.0;
-    let width: i32 = 800;
+    let width: i32 = 1280;
     let height: i32 = (width as f32 / aspect_ratio) as i32;
 
     let image = Image::new(width, height);
@@ -26,9 +32,9 @@ fn main() -> std::io::Result<()> {
 
     // all render shapes
     let world: World = World::new()
-        .insert(Box::new(Sphere::new_pos_t(Point::new(-0.25, -0.25, -1.0), 0.15)))
-        .insert(Box::new(Sphere::new_pos_t(Point::new(0.25, -0.25, -1.0), 0.15)))
-        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.25, -1.0), 0.15)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.0, -1.0), 0.25)))
+    //  .insert(Box::new(Sphere::new_pos_t(Point::new(0.25, -0.25, -1.0), 0.15)))
+    //  .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.25, -1.0), 0.15)))
 
     // DONE Figure out why floor sphere is clipping above the camera.
     // FIX Make sure root t is positive.
@@ -38,15 +44,9 @@ fn main() -> std::io::Result<()> {
     let render_closure = |render: RenderObject| -> Color {
         let camera: &Camera = render.camera;
 
-        let r: Ray = Ray::new(
-            Point::origin(),
-            camera.ll_corner + camera.right.scalar_mul(render.coordinate.a) 
-            + camera.up.scalar_mul(render.coordinate.b) 
-            + camera.to.scalar_mul(-1.0) 
-        );
-        
-        let color: Color = ray_color(r, render.world).scalar_mul(255.0);
-        color
+        // sample coordinate from many random offsets
+        let color: Color = camera.sample_pixel(render);
+        color.scalar_mul(255.0)
     };
 
     // render
@@ -58,23 +58,8 @@ fn main() -> std::io::Result<()> {
     };
 
     image.draw(header)?; 
+
+    let execution_time = now.elapsed();
+    println!("Execution Time: {} seconds.", execution_time.as_secs());
     Ok(())
-}
-
-fn ray_color(r: Ray, world: &World) -> Color {
-    match world.hit(r) {
-        Some(c) => {
-            // sphere colorized to normals
-            Color::new(c.normal.a + 1.0, c.normal.b + 1.0, c.normal.c + 1.0).scalar_mul(0.5)
-        },
-        None => {
-            // background color
-            let t: f32 = 0.5 * ( r.direction.b + 1.0 ); 
-
-            let white: Color = Color::new(1.0, 1.0, 1.0);
-            let blue: Color = Color::new(0.5, 0.7, 1.0);
-
-            lerp_vec(white, blue, t)
-        }
-    }
 }

@@ -4,6 +4,9 @@ pub mod matrix;
 
 use crate::math::vector::*;
 
+use rand::prelude::*;
+
+
 // I like degrees, fight me.
 pub fn deg_to_rad(degree: f32) -> f32 {
     use std::f32::consts::PI;
@@ -13,6 +16,19 @@ pub fn deg_to_rad(degree: f32) -> f32 {
 
     println!("{} degrees = {} radians", degree, result);
     result
+}
+
+pub fn random_f32(min: f32, max: f32) -> f32 {
+    let mut rng = rand::thread_rng();
+    let y: f32 = rng.gen();
+
+    (max - min) * y + min 
+}
+
+pub fn clamp(x: f32, min: f32, max: f32) -> f32 {
+    if x < min { return min; }
+    if x > max { return max; }
+    x
 }
 
 pub fn lerp_vec(start: Vector3, end: Vector3, t: f32) -> Vector3 {

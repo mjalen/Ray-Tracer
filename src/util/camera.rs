@@ -1,8 +1,13 @@
 use crate::util::image::Image;
 
-use crate::math;
-use math::vector::Vector3 as Point;
-use math::matrix::Mat3b3;
+use crate::math::*;
+use crate::math::vector::Vector3;
+use crate::math::matrix::Mat3b3;
+use crate::math::ray::Ray;
+use crate::util::image::*;
+
+type Point = Vector3;
+type Color = Vector3;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Camera {
@@ -26,7 +31,7 @@ impl Camera {
         println!("Focal length: {}", at.len());
 
         // there is a floating point errors in Mat3b3::roll... probably
-        let right_dir = Mat3b3::roll(up, math::deg_to_rad(270.0));
+        let right_dir = Mat3b3::roll(up, deg_to_rad(270.0));
         let right: Point = right_dir.scalar_mul(view_width);
 
         
@@ -41,5 +46,38 @@ impl Camera {
         println!("Camera LL Corner: {}", ll_corner.to_string());
 
         Camera { up, to, at, ll_corner, right}
+    }
+
+    pub fn get_ray(self, u: f32, v: f32) -> Ray {
+        let dir: Point = self.ll_corner + self.right.scalar_mul(u) + self.up.scalar_mul(v);
+
+        Ray::new(Point::origin(), dir)
+    }
+
+    // returns the average color found by sampling around a pixel
+    pub fn sample_pixel(self, context: RenderObject) -> Color {
+        let mut pixel: Color = Color::origin();
+        for _ in 0..context.image.samples_per_pixel {
+            // closure for offseting the sample ray.
+            let sample_offset = |original: f32, length: f32| -> f32 {
+                let numerator: f32 = original + random_f32(0.0, 1.0);
+                numerator / (length - 1.0)
+            };
+
+            let u: f32 = sample_offset(context.coordinate.a, context.image.width as f32);
+            let v: f32 = sample_offset(context.coordinate.b, context.image.height as f32);
+
+            let r: Ray = self.get_ray(u, v);
+            pixel = pixel + r.ray_color(context.world);
+        }
+
+        let scale: f32 = 1.0 / context.image.samples_per_pixel as f32;
+        let color: Color = pixel.scalar_mul(scale);
+
+        Color::new(
+            clamp(color.a, 0.0, 0.999),
+            clamp(color.b, 0.0, 0.999),
+            clamp(color.c, 0.0, 0.999)
+        )
     }
 }
