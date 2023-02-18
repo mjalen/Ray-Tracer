@@ -26,12 +26,13 @@ fn main() -> std::io::Result<()> {
 
     // all render shapes
     let world: World = World::new()
-        .insert(Box::new(Sphere::new(Point::new(-0.25, -0.25, -1.0), 0.15)))
-        .insert(Box::new(Sphere::new(Point::new(0.25, -0.25, -1.0), 0.15)))
-        .insert(Box::new(Sphere::new(Point::new(0.0, 0.25, -1.0), 0.15)));
+        .insert(Box::new(Sphere::new_pos_t(Point::new(-0.25, -0.25, -1.0), 0.15)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.25, -0.25, -1.0), 0.15)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.25, -1.0), 0.15)))
 
-    // TODO Figure out why floor sphere is clipping above the camera.
-    //  .insert(Box::new(Sphere::new(Point::new(0.0,-100.5,-1.0), 100.0)));
+    // DONE Figure out why floor sphere is clipping above the camera.
+    // FIX Make sure root t is positive.
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0,-100.5, -1.0), 100.0)));
 
     // render procedure 
     let render_closure = |render: RenderObject| -> Color {

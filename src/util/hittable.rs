@@ -3,6 +3,11 @@ use crate::math::ray::Ray;
 
 type Point = Vector3;
 
+// Trait for render-able objects in the world.
+pub trait Hittable {
+    fn hit(&self, ray: Ray) -> Option<RayCollision>;
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct RayCollision { // returned when an object is hit by a ray.
     pub hit_point: Point,
@@ -13,18 +18,29 @@ pub struct RayCollision { // returned when an object is hit by a ray.
 
 impl RayCollision {
     pub fn new(ray: Ray, normal: Point, distance: f32) -> Self {
-        // if normal points into shape, reverse it.
-        let is_inward: bool = ray.direction.dot(&normal) < 0.0; 
-        let outward_normal: Point = if is_inward { normal } else { normal.scalar_mul(-1.0) }; 
+
+        // positive dot product -> vectors are in same direction.
+        // negative dot product -> vectors are different directions.
+        
+        // the objective here is to have the normal vector
+        // always oppose the casted ray while tracking
+        // if the normal was originally outward facing.
+        let is_outward: bool = ray.direction.dot(&normal) < 0.0; 
+        let outward_normal: Point = if is_outward { normal } 
+                                    else { normal.scalar_mul(-1.0) }; 
 
         RayCollision { 
             hit_point: ray.at(distance), 
             normal: outward_normal, 
             distance,
-            front_face: is_inward
+            front_face: is_outward
         }
     }
 }
+
+/*
+ *  The World of Hittables 
+ */
 
 pub struct World {
     pub objects: Vec<Box<dyn Hittable>>,
@@ -70,40 +86,55 @@ impl Hittable for World {
     }
 }
 
-// trait for all render objects
-pub trait Hittable {
-    fn hit(&self, ray: Ray) -> Option<RayCollision>;
-}
+
 
 #[derive(Copy, Clone, Debug)]
 pub struct Sphere {
     pub center: Point,
-    pub radius: f32
+    pub radius: f32,
+    t_min: f32,
+    t_max: f32
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f32) -> Self {
-        Sphere { center, radius }
+    pub fn new(center: Point, radius: f32, t_min: f32, t_max: f32) -> Self {
+        Sphere { center, radius, t_min, t_max }
+    }
+
+    pub fn new_pos_t(center: Point, radius: f32) -> Self {
+        let t_min: f32 = 0.0;
+        let t_max: f32 = f32::INFINITY;
+
+        Sphere { center, radius, t_min, t_max }
     }
 }
 
 impl Hittable for Sphere {
     fn hit(&self, ray: Ray) -> Option<RayCollision> {
         // t^2*b*b + 2tb*(A-C)+(A-C)*(A-C) t solved using quadratic formula
+        // optimized to t = -h +- sqrt(h^2 - ac) all over a
         let o_min_c: Point = ray.origin + self.center.scalar_mul(-1.0);
         let a: f32 = ray.direction.dot(&ray.direction); 
-        let b: f32 = 2.0 * ray.direction.dot(&o_min_c);
+        let half_b: f32 = ray.direction.dot(&o_min_c);
         let c: f32 = o_min_c.dot(&o_min_c) - self.radius * self.radius;
-        let formula_sqrt: f32 = b * b - 4.0 * a * c;
-        if formula_sqrt < 0.0 {
+
+        let discriminant: f32 = half_b * half_b - a * c;
+        if discriminant < 0.0 {
             return None;
         }
 
         // finish quad formula to get ray distance. 
-        let dist: f32 = (-1.0 * b - formula_sqrt.sqrt()) / (2.0 * a);
-        let norm: Point = (ray.at(dist) + self.center.scalar_mul(-1.0)).unit(); 
+        let mut t_root: f32 = (-1.0 * half_b - discriminant.sqrt()) / a;
+        if t_root < self.t_min || t_root > self.t_max {
+            t_root = (-1.0 * half_b - discriminant.sqrt()) / a;
+            if t_root < self.t_min || t_root > self.t_max {
+                return None;
+            }
+        }
+
+        let norm: Point = (ray.at(t_root) + self.center.scalar_mul(-1.0)).scalar_div(self.radius); 
         
-        Some(RayCollision::new(ray, norm, dist)) 
+        Some(RayCollision::new(ray, norm, t_root)) 
 
     }
 }
