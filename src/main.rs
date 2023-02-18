@@ -19,7 +19,7 @@ fn main() -> std::io::Result<()> {
 
     // image settings
     let aspect_ratio: f32 = 16.0 / 10.0;
-    let width: i32 = 1280;
+    let width: i32 = 800;
     let height: i32 = (width as f32 / aspect_ratio) as i32;
 
     let image = Image::new(width, height);
