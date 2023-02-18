@@ -1,3 +1,4 @@
+use crate::math::random_f32;
 use crate::math::matrix::Mat3b3;
 
 #[derive(Copy, Clone, Debug)]
@@ -7,9 +8,40 @@ pub struct Vector3 {
     pub c: f32,
 }
 
+type Point = Vector3;
+
 impl Vector3 {
     pub fn new(a: f32, b: f32, c: f32) -> Self {
         Vector3 { a, b, c }
+    }
+
+    pub fn random(min: f32, max: f32) -> Self {
+        Vector3 { a: random_f32(min, max), b: random_f32(min, max), c: random_f32(min, max) }
+    }
+
+    pub fn rand_in_unit_sphere() -> Point {
+        // random length diffusion for Lambertian Distribution.
+        loop {
+            let s: Point = Vector3::random(-1.0, 1.0);
+            if s.len() * s.len() < 1.0 {
+                return s;
+            }
+        }
+    }
+
+    pub fn rand_unit_vec() -> Point {
+        // unit length diffusion
+        // Used for a more proper Lambertian Distribution of light ray diffusion (Incorrect)
+        Point::rand_in_unit_sphere().unit()
+    }
+
+    pub fn rand_in_hemisphere(normal: &Point) -> Point {
+        // diffusion in same hemisphere as normal
+        let in_unit_sphere: Point = Vector3::rand_in_unit_sphere();
+        if in_unit_sphere.dot(normal) > 0.0 {
+            return in_unit_sphere;
+        }
+        in_unit_sphere.scalar_mul(-1.0)
     }
 
     pub fn origin() -> Self {

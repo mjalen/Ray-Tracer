@@ -68,16 +68,18 @@ impl Camera {
             let v: f32 = sample_offset(context.coordinate.b, context.image.height as f32);
 
             let r: Ray = self.get_ray(u, v);
-            pixel = pixel + r.ray_color(context.world);
+            pixel = pixel + r.ray_color(context.world, 50);
         }
 
         let scale: f32 = 1.0 / context.image.samples_per_pixel as f32;
         let color: Color = pixel.scalar_mul(scale);
 
+        // sqrt is gamma 2 color correction:
+        // color ^ (1/gamma)
         Color::new(
-            clamp(color.a, 0.0, 0.999),
-            clamp(color.b, 0.0, 0.999),
-            clamp(color.c, 0.0, 0.999)
+            clamp(color.a.sqrt(), 0.0, 0.999),
+            clamp(color.b.sqrt(), 0.0, 0.999),
+            clamp(color.c.sqrt(), 0.0, 0.999)
         )
     }
 }

@@ -32,9 +32,7 @@ fn main() -> std::io::Result<()> {
 
     // all render shapes
     let world: World = World::new()
-        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.0, -1.0), 0.25)))
-    //  .insert(Box::new(Sphere::new_pos_t(Point::new(0.25, -0.25, -1.0), 0.15)))
-    //  .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.25, -1.0), 0.15)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, -0.0, -1.0), 0.35)))
 
     // DONE Figure out why floor sphere is clipping above the camera.
     // FIX Make sure root t is positive.
@@ -59,7 +57,9 @@ fn main() -> std::io::Result<()> {
 
     image.draw(header)?; 
 
+    // record how long program took.
     let execution_time = now.elapsed();
     println!("Execution Time: {} seconds.", execution_time.as_secs());
+
     Ok(())
 }

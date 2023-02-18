@@ -102,7 +102,9 @@ impl Sphere {
     }
 
     pub fn new_pos_t(center: Point, radius: f32) -> Self {
-        let t_min: f32 = 0.0;
+        // to account for floating point errors. ignore hits near 0.
+        // this helps fix shadow acne... which is apparently a thing.
+        let t_min: f32 = 0.001; 
         let t_max: f32 = f32::INFINITY;
 
         Sphere { center, radius, t_min, t_max }
