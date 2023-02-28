@@ -21,17 +21,27 @@ impl Ray {
     }
 
     pub fn ray_color(self, world: &World, depth: i32) -> Color {
-        match world.hit(self) {
+        // if diffusion depth has been reached 
+        if depth <= 0 {
+            return Color::new(0.0, 0.0, 0.0);
+        } 
+
+        let collision_result: Option<RayCollision> = world.hit(self);
+
+        match collision_result {
             Some(c) => {
-                // if diffusion depth has been reached 
-                if depth <= 0 {
-                    return Color::new(0.0, 0.0, 0.0);
+                // receive material dependent scatter ray
+                let (scattered, attenuation, norm_matches_scatter) = c.material.scatter(self, c);
+                if norm_matches_scatter {
+                    let color = attenuation * scattered.ray_color(world, depth - 1); 
+                    return color;
                 }
 
-                let target: Point = c.hit_point + c.normal + Vector3::rand_in_hemisphere(&c.normal);
-                let diffuse_ray: Ray = Ray::new(c.hit_point, target + c.hit_point.scalar_mul(-1.0));
+                return Color::new(0.0, 0.0, 0.0);
+                // let target: Point = c.hit_point + c.normal + Vector3::rand_in_hemisphere(&c.normal);
+                // let diffuse_ray: Ray = Ray::new(c.hit_point, target + c.hit_point.scalar_mul(-1.0));
 
-                diffuse_ray.ray_color(world, depth - 1).scalar_mul(0.5)
+                // diffuse_ray.ray_color(world, depth - 1).scalar_mul(0.5)
                 // Color::new(c.normal.a + 1.0, c.normal.b + 1.0, c.normal.c + 1.0).scalar_mul(0.5)
             },
             None => {

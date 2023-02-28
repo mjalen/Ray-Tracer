@@ -1,5 +1,6 @@
 use crate::math::vector::Vector3;
 use crate::math::ray::Ray;
+use crate::util::material::*;
 
 type Point = Vector3;
 
@@ -8,16 +9,19 @@ pub trait Hittable {
     fn hit(&self, ray: Ray) -> Option<RayCollision>;
 }
 
+pub trait Collision {}
+
 #[derive(Copy, Clone, Debug)]
 pub struct RayCollision { // returned when an object is hit by a ray.
-    pub hit_point: Point,
-    pub normal: Point,
-    pub distance: f32,
-    pub front_face: bool
+    pub hit_point: Point, // actual point of collision.
+    pub normal: Point, // collided surface's normal from hit_point 
+    pub distance: f32, // distance from camera to collision.
+    pub front_face: bool, // did the ray collide the inside or outside (front) of the surface?
+    pub material: Material // the type of material collided
 }
 
 impl RayCollision {
-    pub fn new(ray: Ray, normal: Point, distance: f32) -> Self {
+    pub fn new(ray: Ray, normal: Point, distance: f32, material: Material) -> Self {
 
         // positive dot product -> vectors are in same direction.
         // negative dot product -> vectors are different directions.
@@ -25,7 +29,7 @@ impl RayCollision {
         // the objective here is to have the normal vector
         // always oppose the casted ray while tracking
         // if the normal was originally outward facing.
-        let is_outward: bool = ray.direction.dot(&normal) < 0.0; 
+        let is_outward: bool = ray.direction.dot(normal) < 0.0; 
         let outward_normal: Point = if is_outward { normal } 
                                     else { normal.scalar_mul(-1.0) }; 
 
@@ -33,7 +37,8 @@ impl RayCollision {
             hit_point: ray.at(distance), 
             normal: outward_normal, 
             distance,
-            front_face: is_outward
+            front_face: is_outward,
+            material 
         }
     }
 }
@@ -41,7 +46,6 @@ impl RayCollision {
 /*
  *  The World of Hittables 
  */
-
 pub struct World {
     pub objects: Vec<Box<dyn Hittable>>,
 }
@@ -88,26 +92,27 @@ impl Hittable for World {
 
 
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Sphere {
     pub center: Point,
     pub radius: f32,
+    pub material: Material,
     t_min: f32,
     t_max: f32
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f32, t_min: f32, t_max: f32) -> Self {
-        Sphere { center, radius, t_min, t_max }
+    pub fn new(center: Point, radius: f32, material: Material, t_min: f32, t_max: f32) -> Self {
+        Sphere { center, radius, material, t_min, t_max }
     }
 
-    pub fn new_pos_t(center: Point, radius: f32) -> Self {
+    pub fn new_pos_t(center: Point, material: Material, radius: f32) -> Self {
         // to account for floating point errors. ignore hits near 0.
         // this helps fix shadow acne... which is apparently a thing.
         let t_min: f32 = 0.001; 
         let t_max: f32 = f32::INFINITY;
 
-        Sphere { center, radius, t_min, t_max }
+        Sphere { center, radius, material, t_min, t_max }
     }
 }
 
@@ -116,9 +121,9 @@ impl Hittable for Sphere {
         // t^2*b*b + 2tb*(A-C)+(A-C)*(A-C) t solved using quadratic formula
         // optimized to t = -h +- sqrt(h^2 - ac) all over a
         let o_min_c: Point = ray.origin + self.center.scalar_mul(-1.0);
-        let a: f32 = ray.direction.dot(&ray.direction); 
-        let half_b: f32 = ray.direction.dot(&o_min_c);
-        let c: f32 = o_min_c.dot(&o_min_c) - self.radius * self.radius;
+        let a: f32 = ray.direction.dot(ray.direction); 
+        let half_b: f32 = ray.direction.dot(o_min_c);
+        let c: f32 = o_min_c.dot(o_min_c) - self.radius * self.radius;
 
         let discriminant: f32 = half_b * half_b - a * c;
         if discriminant < 0.0 {
@@ -136,8 +141,7 @@ impl Hittable for Sphere {
 
         let norm: Point = (ray.at(t_root) + self.center.scalar_mul(-1.0)).scalar_div(self.radius); 
         
-        Some(RayCollision::new(ray, norm, t_root)) 
-
+        Some(RayCollision::new(ray, norm, t_root, self.material)) 
     }
 }
 

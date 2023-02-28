@@ -20,7 +20,8 @@ impl Vector3 {
     }
 
     pub fn rand_in_unit_sphere() -> Point {
-        // random length diffusion for Lambertian Distribution.
+        // random length scattering 
+        // for Lambertian Distribution.
         loop {
             let s: Point = Vector3::random(-1.0, 1.0);
             if s.len() * s.len() < 1.0 {
@@ -30,18 +31,43 @@ impl Vector3 {
     }
 
     pub fn rand_unit_vec() -> Point {
-        // unit length diffusion
+        // unit length scattering 
         // Used for a more proper Lambertian Distribution of light ray diffusion (Incorrect)
-        Point::rand_in_unit_sphere().unit()
+        Point::rand_in_unit_sphere()
     }
 
-    pub fn rand_in_hemisphere(normal: &Point) -> Point {
+    pub fn rand_in_hemisphere(normal: Point) -> Point {
+        // hemispherical scattering
         // diffusion in same hemisphere as normal
         let in_unit_sphere: Point = Vector3::rand_in_unit_sphere();
         if in_unit_sphere.dot(normal) > 0.0 {
             return in_unit_sphere;
         }
         in_unit_sphere.scalar_mul(-1.0)
+    }
+
+    pub fn near_zero(self) -> bool {
+        // to avoid normal - scatter vector = 0
+        let s = 1e-8;
+
+        // return if vector is near origin
+        self.a.abs() < s &&  
+        self.b.abs() < s &&
+        self.c.abs() < s
+    }
+
+    pub fn reflect(self, normal: Vector3) -> Self {
+        // simulate metal reflection:
+        // reflection = v + 2*b.
+        // v is self.
+        // b is the normal vector of length v dot n
+        //
+        // v: (0.3, 0.4, 0.5)
+        // n: (0.5, 0.5, 0.5)
+        
+        let b: Point = normal.scalar_mul(self.dot(normal));
+        let refl: Point = self + b.scalar_mul(2.0);
+        refl
     }
 
     pub fn origin() -> Self {
@@ -64,7 +90,7 @@ impl Vector3 {
         self.scalar_mul(1.0 / denominator)
     }
 
-    pub fn dot(&self, other: &Self) -> f32 {
+    pub fn dot(self, other: Self) -> f32 {
         self.a * other.a + self.b * other.b + self.c * other.c
     }
 
@@ -102,6 +128,20 @@ impl Add for Vector3 {
             self.a + other.a,
             self.b + other.b,
             self.c + other.c
+        )
+    }
+}
+
+
+use std::ops::Mul;
+impl Mul for Vector3 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::new(
+            self.a * rhs.a,
+            self.b * rhs.b,
+            self.c * rhs.c
         )
     }
 }

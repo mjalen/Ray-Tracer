@@ -2,10 +2,9 @@ pub mod util;
 pub mod math;
 use crate::util::image::{Image, RenderObject, DrawHeader};
 use crate::math::vector::Vector3;
-use crate::math::ray::Ray;
 use crate::util::camera::Camera;
 use crate::util::hittable::*;
-use crate::math::*;
+use crate::util::material::*;
 
 use std::time::Instant;
 
@@ -15,7 +14,6 @@ type Color = Vector3;
 fn main() -> std::io::Result<()> {
     // calculate program run-time.
     let now = Instant::now();
-
 
     // image settings
     let aspect_ratio: f32 = 16.0 / 10.0;
@@ -30,13 +28,21 @@ fn main() -> std::io::Result<()> {
         image
     );
 
+    // Materials
+    let mat_ground = Material::Lambertian { albedo: Color::new(0.3, 0.8, 0.2) };
+    let mat_center = Material::Lambertian { albedo: Color::new(0.8, 0.0, 0.0) };
+    let mat_left = Material::Metal { albedo: Color::new(0.8, 0.8, 0.8) };
+    let mat_right = Material::Metal { albedo: Color::new(0.8, 0.6, 0.2) };
+
     // all render shapes
     let world: World = World::new()
-        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, -0.0, -1.0), 0.35)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0, 0.0, -1.0), mat_center, 0.35)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(-0.7, 0.0, -1.0), mat_left, 0.3)))
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.7, 0.0, -1.0), mat_right, 0.3)))
 
     // DONE Figure out why floor sphere is clipping above the camera.
     // FIX Make sure root t is positive.
-        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0,-100.5, -1.0), 100.0)));
+        .insert(Box::new(Sphere::new_pos_t(Point::new(0.0,-100.5, -1.0), mat_ground, 100.0)));
 
     // render procedure 
     let render_closure = |render: RenderObject| -> Color {

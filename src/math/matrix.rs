@@ -14,7 +14,7 @@ impl Mat3b3 {
         Mat3b3 { c1, c2, c3 }
     }
 
-    pub fn pitch(radian: f32) -> Self { // along a-axis
+    pub fn pitch(_radian: f32) -> Self { // along a-axis
 
         // returns:
         // 1   0     0 
@@ -24,7 +24,7 @@ impl Mat3b3 {
 
     }
 
-    pub fn yaw(radian: f32) -> Self { // along b-axis
+    pub fn yaw(_radian: f32) -> Self { // along b-axis
         
         // returns:
         // cos   0    sin
