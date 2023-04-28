@@ -21,7 +21,7 @@ impl Material {
 
     fn lambertian_scatter(albedo: Color, collision: RayCollision) -> (Ray, Color, bool) {
         // standard unit length lambertian scatter with attenuated color
-        let mut scatter_dir: Point = collision.normal + Vector3::rand_in_hemisphere(collision.normal);
+        let mut scatter_dir: Point = collision.normal + Vector3::rand_in_unit_sphere();
        
         // in case scatter dir is the oppose of the normal.
         if scatter_dir.near_zero() {

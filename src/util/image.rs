@@ -1,71 +1,76 @@
+// use std::thread;
+// use std::sync::mpsc;
+
+use std::io::{self, Write};
+// use std::thread;
+// use std::sync::*;
+// use std::thread::JoinHandle;
+
 use crate::math::vector::Vector3 as Point;
 use crate::util::camera::Camera;
 use crate::util::hittable::*;
-
-type Color = Point;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Image {
     pub width: i32,
     pub height: i32,
     pub samples_per_pixel: i32,
+    pub fov: f32
 }
 
 pub struct DrawHeader<'a> {
     pub output_file: &'a str, 
     pub camera: &'a Camera,
     pub world: &'a World,
-    pub draw_call: fn(RenderObject) -> Color
 }
 
-pub struct RenderObject<'a> {
+#[derive(Clone)]
+pub struct RenderObject {
     pub coordinate: Point,
-    pub image: &'a Image,
-    pub camera: &'a Camera,
-    pub world: &'a World
+    pub image: Image,
+    pub camera: Camera,
+    pub world: World,
 }
 
 impl Image {
-    pub fn new(width: i32, height: i32) -> Self {
+    pub fn new(width: i32, height: i32, fov: f32, samples: i32) -> Self {
         println!("Created a new {}x{} image!", width, height);
-        Image { width, height, samples_per_pixel: 20 }
+        Image { width, height, fov, samples_per_pixel: samples }
     }
 
-    pub fn draw(&self, header: DrawHeader) -> std::io::Result<()> {
+    pub fn draw(&self, header: &DrawHeader) -> std::io::Result<()> {
         let mut render_contents: String = format!("P3\n{} {}\n255\n", self.width, self.height);
 
-        // generate a list of each point to render, as a vec container
-        let render_plane: Vec<RenderObject> = {
-            let mut plane: Vec<RenderObject> = vec![];
-            for n in (0..self.height).rev() {
-                for m in 0..self.width {
-                    // get image coordinate x and y normalized
-                    // let nx = m  as f32 / (self.width-1) as f32;
-                    // let ny = n as f32 / (self.height-1) as f32;
+        // render each pixel of this image, pixel-by-pixel. 
+        print!("\nCreating framebuffer at {} samples/pixel...\n", self.samples_per_pixel);
 
-                    // Using un-normalized world space coordinates
-                    // so that anti-alias properly calculates sample
-                    // coordinates.
-
-                    plane.push( RenderObject {
-                        coordinate: Point::new(m as f32, n as f32, 0.0),
-                        image: self,
-                        camera: header.camera,
-                        world: header.world
-                    });
-                }
-            }
-            plane
+        // let mut row_contents: Vec<JoinHandle<String>> = vec![];
+        let mut render_object = RenderObject {
+            coordinate: Point::origin(),
+            image: self.to_owned(),
+            camera: header.camera.to_owned(),
+            world: header.world.to_owned()
         };
-        
-        let pixel_val: Vec<Color> = render_plane
-            .into_iter()
-            .map(header.draw_call)
-            .collect();
 
-        for p in pixel_val {
-            render_contents.push_str(&p.to_pixel());
+        for y in (0..self.height).rev() {
+            for x in 0..self.width {
+
+                render_object.coordinate = Point::new(x as f32, y as f32, 0.0).to_owned();
+
+                let color_str = render_object.camera
+                    .sample_pixel(&render_object)
+                    .scalar_mul(255.0)
+                    .to_pixel();
+
+                render_contents.push_str(&color_str);
+            }
+
+            let percentage_complete: i32 = (100.0 * (1.0 - (y as f32 / self.height as f32))) as i32;
+            print!("\rFramebuffer: {}%", percentage_complete);
+            let _ = io::stdout().flush();
         }
+
+        print!("\n");
 
         use std::fs;
         fs::write(header.output_file, render_contents)?;
