@@ -10,11 +10,9 @@ This project is a learning exercise with a few objectives:
 
 - Have fun! :D
 
-<<<<<<< HEAD
 This project is based on the book ['Ray Tracing in One Weekend'](https://raytracing.github.io/books/RayTracingInOneWeekend.html) by Peter Shirley. This is my first time reading this book, and it is very helpful and fast. Changes made between this project and the source book are found under 'Project Deviations From Book'.
-=======
+
 This project is based on the book ['Ray Tracing in One Weekend'](https://raytracing.github.io/books/RayTracingInOneWeekend.html) by Peter Shirley. This is my first time reading this book, and it is very helpful and fast. The changes this project make from 'Ray Tracing in One Weekend' can be seen \[here]\(## Project Deviations From Book).
->>>>>>> 6756faa (Camera is now move-able.)
 
 This project uses the Rust programming language. There are two reasons for this. The first is that I learn quicker by re-writing content in my own words. Translating from C++ to Rust is helpful because it has me THINK about what the code I am copying does. The second reason for using Rust is the hype. I have heard a lot of hype around Rust and was curious how great it really was. Spoilers: Rust is awesome.
 
