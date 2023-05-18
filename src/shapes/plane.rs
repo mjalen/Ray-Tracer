@@ -3,31 +3,36 @@ use crate::{math::vector::*, util::hittable::RayCollision};
 use crate::math::ray::Ray;
 use crate::util::hittable::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Plane {
-    pub p1: Point,
-    pub p2: Point,
+    pub min: Point,
+    pub max: Point,
     pub n: Point,
-    pub material: Material
+    pub material: Material,
+    pub t_min: f32,
+    pub t_max: f32
 }
 
 impl Plane {
-    pub fn new (p1: Point, p2: Point, n: Point, material: Material) -> Plane {
-        let p = Plane { p1, p2, n, material };
+    pub fn new (min: Point, max: Point, n: Point, material: Material) -> Plane {
+        let t_max = 0.001;
+        let t_min = f32::INFINITY;
 
-        print!("Plane: {:?}", p);
-        p
+        Plane { min, max, n, material, t_min, t_max }
     }
 }
 
 impl Hittable for Plane {
     fn hit(&self, ray: Ray) -> Option<RayCollision> {
-        let t_min: f32 = 0.001; 
-        let t_max: f32 = f32::INFINITY;
 
-        let t = (self.p1.dot(self.n) - ray.origin.dot(self.n)) / (ray.direction.dot(self.n));
+        let t = {
+            let t_num = Vector3::dot(&self.min, &self.n) - Vector3::dot(&ray.origin, &self.n);
+            let t_den = Vector3::dot(&ray.direction, &self.n);
 
-        if t < t_min || t > t_max {
+            t_num / t_den
+        };  
+
+        if t < self.t_min || t > self.t_max {
             return None
         }
 
@@ -52,6 +57,6 @@ impl Hittable for Plane {
         //     return None;
         // }
 
-        Some(RayCollision::new(ray, self.n, t, self.material))
+        Some(RayCollision::new(ray, self.n, t, self.material.to_owned()))
     }
 }

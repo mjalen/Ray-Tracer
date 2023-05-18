@@ -1,22 +1,28 @@
 use crate::math::random_f32;
-use crate::math::matrix::Mat3b3;
+
+use std::ops::Add;
+use std::ops::Mul;
 
 #[derive(Copy, Clone, Debug)]
-pub struct Vector3 {
-    pub a: f32, // given a, b, c to be Point and Color independent.
-    pub b: f32, 
-    pub c: f32,
+pub struct Vector3<T: Add + Mul> {
+    pub a: T, // given a, b, c to be Point and Color independent.
+    pub b: T, 
+    pub c: T,
 }
 
-pub type Point = Vector3;
-pub type Color = Vector3;
+pub type Point = Vector3<f32>;
+pub type Color = Vector3<f32>;
 
-impl Vector3 {
-    pub fn new(a: f32, b: f32, c: f32) -> Self {
+pub type ColorU8 = Vector3<u8>; 
+
+impl<T: Add + Mul> Vector3<T> {
+    pub fn new(a: T, b: T, c: T) -> Vector3<T> {
         Vector3 { a, b, c }
     }
+}
 
-    pub fn random(min: f32, max: f32) -> Self {
+impl Vector3<f32> {
+    pub fn random(min: f32, max: f32) -> Vector3<f32> {
         Vector3 { a: random_f32(min, max), b: random_f32(min, max), c: random_f32(min, max) }
     }
 
@@ -41,9 +47,11 @@ impl Vector3 {
         // hemispherical scattering
         // diffusion in same hemisphere as normal
         let in_unit_sphere: Point = Vector3::rand_in_unit_sphere();
-        if in_unit_sphere.dot(normal) > 0.0 {
-            return in_unit_sphere;
+
+        if Vector3::dot(&in_unit_sphere, &normal) > 0.0 {
+            return in_unit_sphere
         }
+
         in_unit_sphere.scalar_mul(-1.0)
     }
 
@@ -57,7 +65,7 @@ impl Vector3 {
         self.c.abs() < s
     }
 
-    pub fn reflect(self, normal: Vector3) -> Self {
+    pub fn reflect(&self, normal: Vector3<f32>) -> Point {
         // simulate metal reflection:
         // reflection = v + 2*b.
         // v is self.
@@ -65,9 +73,9 @@ impl Vector3 {
         //
         // v: (0.3, 0.4, 0.5)
         // n: (0.5, 0.5, 0.5)
-        
-        let b: Point = normal.scalar_mul(self.dot(normal));
-        let refl: Point = self + b.scalar_mul(2.0);
+
+        let b: Point = normal.scalar_mul(Vector3::dot(self, &normal));
+        let refl: Point = *self + b.scalar_mul(2.0);
         refl
     }
 
@@ -83,32 +91,24 @@ impl Vector3 {
         format!("{} {} {}\n", self.a as i32, self.b as i32, self.c as i32)
     }
 
-    pub fn scalar_mul(self, factor: f32) -> Self {
-        Self::new(self.a * factor, self.b * factor, self.c * factor) 
+    pub fn scalar_mul(self, factor: f32) -> Vector3<f32> {
+        Vector3::new(self.a * factor, self.b * factor, self.c * factor) 
     }
 
     pub fn scalar_div(self, denominator: f32) -> Self {
         self.scalar_mul(1.0 / denominator)
     }
 
-    pub fn dot(self, other: Self) -> f32 {
-        self.a * other.a + self.b * other.b + self.c * other.c
+    pub fn dot(u: &Vector3<f32>, v: &Vector3<f32>) -> f32 {
+        u.a * v.a + u.b * v.b + u.c * v.c   
     }
 
-    pub fn cross(self, other: Vector3) -> Self {
+    pub fn cross(self, other: Vector3<f32>) -> Self {
         Self::new(
             self.b * other.c - self.c * other.b,
             self.c * other.a - self.a * other.c,
             self.a * other.b - self.b * other.a
         )
-    }
-
-    pub fn mul_m(self, mat: Mat3b3) -> Self {
-        let a_total: f32 = self.a * mat.c1.a + self.b * mat.c2.a + self.c * mat.c3.a;
-        let b_total: f32 = self.a * mat.c1.b + self.b * mat.c2.b + self.c * mat.c3.b;
-        let c_total: f32 = self.a * mat.c1.c + self.b * mat.c2.c + self.c * mat.c3.c;
-
-        Self::new(a_total, b_total, c_total)
     }
 
     pub fn unit(self) -> Self {
@@ -120,9 +120,8 @@ impl Vector3 {
     }
 }
 
-use std::ops::Add;
-impl Add for Vector3 {
-    type Output = Self;
+impl<T: Add<Output = T> + Mul<Output = T>> Add for Vector3<T> {
+    type Output = Vector3<T>;
 
     fn add(self, other: Self) -> Self {
         Self::new(
@@ -133,9 +132,7 @@ impl Add for Vector3 {
     }
 }
 
-
-use std::ops::Mul;
-impl Mul for Vector3 {
+impl<T: Add<Output = T> + Mul<Output = T>> Mul for Vector3<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {

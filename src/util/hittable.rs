@@ -1,12 +1,12 @@
 // use std::thread;
 
-use crate::math::vector::Vector3;
+use std::f32::consts::PI;
+
+use crate::math::vector::*;
 use crate::math::ray::Ray;
 use crate::util::material::*;
 
 use crate::shapes::shape::*;
-
-type Point = Vector3;
 
 // Trait for render-able objects in the world.
 pub trait Hittable {
@@ -15,12 +15,13 @@ pub trait Hittable {
 
 pub trait Collision {}
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct RayCollision { // returned when an object is hit by a ray.
     pub hit_point: Point, // actual point of collision.
     pub normal: Point, // collided surface's normal from hit_point 
     pub distance: f32, // distance from camera to collision.
     pub front_face: bool, // did the ray collide the inside or outside (front) of the surface?
+    pub uv: Point,
     pub material: Material // the type of material collided
 }
 
@@ -33,16 +34,21 @@ impl RayCollision {
         // the objective here is to have the normal vector
         // always oppose the casted ray while tracking
         // if the normal was originally outward facing.
-        let is_outward: bool = ray.direction.dot(normal) < 0.0; 
+        let is_outward: bool = Vector3::dot(&ray.direction, &normal) < 0.0;
         let outward_normal: Point = if is_outward { normal } 
                                     else { normal.scalar_mul(-1.0) }; 
+
+        // let hit_point = ray.at(distance);
+        let u = normal.c.atan2(-1.0 * outward_normal.a) / (2.0 * PI);
+        let v = (-1.0 * outward_normal.b).acos() / PI;
 
         RayCollision { 
             hit_point: ray.at(distance), 
             normal: outward_normal, 
             distance,
             front_face: is_outward,
-            material 
+            material,
+            uv: Point::new(u, v, 0.0)
         }
     }
 }
@@ -61,9 +67,8 @@ impl World {
         World { objects: vec![] }
     }
 
-    pub fn insert(mut self, object: Shape) -> Self {
+    pub fn insert<'a>(&mut self, object: Shape) {
         self.objects.push(object);
-        self
     }
 
     pub fn clear(mut self) -> Self {
@@ -75,26 +80,19 @@ impl World {
 impl Hittable for World {
     fn hit(&self, ray: Ray) -> Option<RayCollision> {
         // calculate each collision through ray. 
-        let hits = self.objects 
+        // my god this is a nightmare O.O
+        self.objects 
             .iter()
             .map(|obj| obj.hit(ray))
-            .collect::<Vec<Option<RayCollision>>>();
-
-        // find closest hit to camera
-        let mut minimum: Option<RayCollision> = None;
-        for collision in hits {
-            if let Some(c) = collision {
-                match minimum {
-                    Some(min) => {
-                        if min.distance > c.distance {
-                            minimum = Some(c)
-                        }
-                    },
-                    None => minimum = Some(c)
-                };   
-            }
-        }
-
-        minimum
+            .filter(|obj| {
+                match obj {
+                    Some(_) => return true,
+                    None => return false
+                }
+            })
+            .map(|obj| obj.unwrap())
+            .min_by(|x, y| {
+                x.distance.to_owned().total_cmp(&y.distance)
+            })
     }
 }

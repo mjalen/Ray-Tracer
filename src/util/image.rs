@@ -6,7 +6,7 @@ use std::io::{self, Write};
 // use std::sync::*;
 // use std::thread::JoinHandle;
 
-use crate::math::vector::Vector3 as Point;
+use crate::math::vector::Point;
 use crate::util::camera::Camera;
 use crate::util::hittable::*;
 
@@ -39,7 +39,7 @@ impl Image {
     }
 
     pub fn draw(&self, header: &DrawHeader) -> std::io::Result<()> {
-        let mut render_contents: String = format!("P3\n{} {}\n255\n", self.width, self.height);
+        // let mut render_contents: String = format!("P3\n{} {}\n255\n", self.width, self.height);
 
         // render each pixel of this image, pixel-by-pixel. 
         print!("\nCreating framebuffer at {} samples/pixel...\n", self.samples_per_pixel);
@@ -52,28 +52,34 @@ impl Image {
             world: header.world.to_owned()
         };
 
-        for y in (0..self.height).rev() {
-            for x in 0..self.width {
+        // goofy mess that attempts to save memory 
+        let image = 
+            format!("P3\n{} {}\n255\n", self.width, self.height) // output head 
+            + // plus the image contents
+            (0..self.height).rev().map(|y| {
+                let row = (0..self.width).map(|x| {
+                    render_object.coordinate = Point::new(x as f32, y as f32, 0.0).to_owned();
 
-                render_object.coordinate = Point::new(x as f32, y as f32, 0.0).to_owned();
+                    let color_str = render_object.camera
+                        .sample_pixel(&render_object)
+                        .scalar_mul(255.0)
+                        .to_pixel();
 
-                let color_str = render_object.camera
-                    .sample_pixel(&render_object)
-                    .scalar_mul(255.0)
-                    .to_pixel();
+                    // render_contents.push_str(&color_str);
+                    color_str
+                }).collect::<String>();
 
-                render_contents.push_str(&color_str);
-            }
+                let percentage_complete: i32 = (100.0 * (1.0 - (y as f32 / self.height as f32))) as i32;
+                print!("\rFramebuffer: {}%", percentage_complete);
+                let _ = io::stdout().flush();
 
-            let percentage_complete: i32 = (100.0 * (1.0 - (y as f32 / self.height as f32))) as i32;
-            print!("\rFramebuffer: {}%", percentage_complete);
-            let _ = io::stdout().flush();
-        }
+                row
+            }).collect::<String>().as_str();
 
         print!("\n");
 
         use std::fs;
-        fs::write(header.output_file, render_contents)?;
+        fs::write(header.output_file, image)?;
         Ok(())
     }
 }

@@ -1,17 +1,9 @@
-// use std::thread;
-// use std::sync::*;
-// use std::thread::JoinHandle;
-
 use crate::util::image::Image;
 
 use crate::math::*;
-use crate::math::vector::Vector3;
-use crate::math::matrix::Mat3b3;
+use crate::math::vector::*;
 use crate::math::ray::Ray;
 use crate::util::image::*;
-
-type Point = Vector3;
-type Color = Vector3;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Camera {
@@ -39,7 +31,6 @@ impl Camera {
         let w = (at + to.scalar_mul(-1.0)).unit();
         let u = up.cross(w).unit(); 
         let v = w.cross(u);
-
 
         // there is a floating point errors in Mat3b3::roll... probably
         // let right_dir = Mat3b3::roll(up, deg_to_rad(270.0));

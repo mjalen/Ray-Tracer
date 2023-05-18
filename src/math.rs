@@ -1,6 +1,5 @@
 pub mod vector;
 pub mod ray;
-pub mod matrix;
 
 use crate::math::vector::*;
 
@@ -31,7 +30,7 @@ pub fn clamp(x: f32, min: f32, max: f32) -> f32 {
     x
 }
 
-pub fn lerp_vec(start: Vector3, end: Vector3, t: f32) -> Vector3 {
+pub fn lerp_vec(start: Vector3<f32>, end: Vector3<f32>, t: f32) -> Vector3<f32> {
     start.scalar_mul(1.0 - t) + end.scalar_mul(t) 
 }
 

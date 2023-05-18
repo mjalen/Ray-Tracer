@@ -6,7 +6,7 @@ use super::plane::Plane;
 
 // Wrapper shape type so the world has no need for dyn Hittable
 // TODO Implement Plane shape.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum Shape {
     Sphere(Sphere),
     Plane(Plane)
